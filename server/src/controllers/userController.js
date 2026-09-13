@@ -14,15 +14,28 @@ export const getLikedSongs = asyncHandler(async (req, res) => {
     path: "likedSongs",
     populate: SONG_POPULATE,
   })
-  res.json({ success: true, data: user.likedSongs })
+  const combined = [...user.likedSongs, ...(user.likedAudiusSongs || [])]
+  res.json({ success: true, data: combined })
 })
 
 // POST /api/users/me/liked/:songId
 export const likeSong = asyncHandler(async (req, res) => {
-  const song = await Song.findById(req.params.songId)
+  const user = await User.findById(req.user._id)
+  const songId = req.params.songId
+
+  if (req.body && req.body.isAudius) {
+    const already = (user.likedAudiusSongs || []).some((s) => String(s._id) === String(songId))
+    if (!already) {
+      if (!user.likedAudiusSongs) user.likedAudiusSongs = []
+      user.likedAudiusSongs.push(req.body)
+      await user.save()
+    }
+    return res.json({ success: true, data: { liked: true, songId } })
+  }
+
+  const song = await Song.findById(songId)
   if (!song) throw new ApiError(404, "Song not found")
 
-  const user = await User.findById(req.user._id)
   const already = user.likedSongs.some((id) => String(id) === String(song._id))
   if (!already) {
     user.likedSongs.push(song._id)
@@ -35,13 +48,22 @@ export const likeSong = asyncHandler(async (req, res) => {
 // DELETE /api/users/me/liked/:songId
 export const unlikeSong = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id)
-  const had = user.likedSongs.some((id) => String(id) === String(req.params.songId))
-  if (had) {
-    user.likedSongs.pull(req.params.songId)
+  const songId = req.params.songId
+
+  const audiusIdx = (user.likedAudiusSongs || []).findIndex((s) => String(s._id) === String(songId))
+  if (audiusIdx !== -1) {
+    user.likedAudiusSongs.splice(audiusIdx, 1)
     await user.save()
-    await Song.findByIdAndUpdate(req.params.songId, { $inc: { likeCount: -1 } })
+    return res.json({ success: true, data: { liked: false, songId } })
   }
-  res.json({ success: true, data: { liked: false, songId: req.params.songId } })
+
+  const had = user.likedSongs.some((id) => String(id) === String(songId))
+  if (had) {
+    user.likedSongs.pull(songId)
+    await user.save()
+    await Song.findByIdAndUpdate(songId, { $inc: { likeCount: -1 } })
+  }
+  res.json({ success: true, data: { liked: false, songId } })
 })
 
 // GET /api/users/me/recent
@@ -51,19 +73,32 @@ export const getRecentlyPlayed = asyncHandler(async (req, res) => {
     populate: SONG_POPULATE,
   })
   const items = user.recentlyPlayed
-    .filter((entry) => entry.song)
-    .map((entry) => ({ ...entry.song.toObject(), playedAt: entry.playedAt }))
+    .filter((entry) => entry.song || entry.audiusSong)
+    .map((entry) => {
+      if (entry.audiusSong) return { ...entry.audiusSong, playedAt: entry.playedAt }
+      return { ...entry.song.toObject(), playedAt: entry.playedAt }
+    })
   res.json({ success: true, data: items })
 })
 
 // POST /api/users/me/recent/:songId
 export const pushRecentlyPlayed = asyncHandler(async (req, res) => {
-  const song = await Song.findById(req.params.songId)
+  const user = await User.findById(req.user._id)
+  const songId = req.params.songId
+
+  if (req.body && req.body.isAudius) {
+    user.recentlyPlayed = user.recentlyPlayed.filter((e) => String(e.audiusSong?._id) !== String(songId))
+    user.recentlyPlayed.unshift({ audiusSong: req.body, playedAt: new Date() })
+    user.recentlyPlayed = user.recentlyPlayed.slice(0, 50)
+    await user.save()
+    return res.json({ success: true, message: "Recorded" })
+  }
+
+  const song = await Song.findById(songId)
   if (!song) throw new ApiError(404, "Song not found")
 
-  const user = await User.findById(req.user._id)
   // Remove any existing entry for this song, then unshift to the front.
-  user.recentlyPlayed = user.recentlyPlayed.filter((e) => String(e.song) !== String(song._id))
+  user.recentlyPlayed = user.recentlyPlayed.filter((e) => e.song && String(e.song) !== String(song._id))
   user.recentlyPlayed.unshift({ song: song._id, playedAt: new Date() })
   user.recentlyPlayed = user.recentlyPlayed.slice(0, 50)
   await user.save()

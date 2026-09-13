@@ -75,9 +75,9 @@ export function PlayerProvider({ children }) {
     loadAudio()
 
     // Record the play (increments count + recently played).
+    if (isAuthenticated) usersApi.pushRecent(current._id, current).catch(() => {})
     if (!current.isAudius) {
       songsApi.registerPlay(current._id).catch(() => {})
-      if (isAuthenticated) usersApi.pushRecent(current._id).catch(() => {})
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?._id])

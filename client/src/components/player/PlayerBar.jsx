@@ -46,7 +46,7 @@ export function PlayerBar() {
             </div>
             <button
               className={`player-like ${liked ? "liked" : ""}`}
-              onClick={() => toggleLike(current._id)}
+              onClick={() => toggleLike(current)}
               aria-label={liked ? "Unlike" : "Like"}
             >
               <Icon name="heart" size={18} filled={liked} />

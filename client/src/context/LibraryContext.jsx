@@ -42,7 +42,9 @@ export function LibraryProvider({ children }) {
   const isLiked = useCallback((songId) => likedIds.has(songId), [likedIds])
 
   const toggleLike = useCallback(
-    async (songId) => {
+    async (song) => {
+      const songId = typeof song === "string" ? song : song._id
+      const songData = typeof song === "object" ? song : undefined
       const currentlyLiked = likedIds.has(songId)
       // Optimistic update.
       setLikedIds((prev) => {
@@ -53,7 +55,7 @@ export function LibraryProvider({ children }) {
       })
       try {
         if (currentlyLiked) await usersApi.unlike(songId)
-        else await usersApi.like(songId)
+        else await usersApi.like(songId, songData)
       } catch {
         // Revert on failure.
         setLikedIds((prev) => {

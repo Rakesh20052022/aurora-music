@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs"
 
 const recentlyPlayedSchema = new mongoose.Schema(
   {
-    song: { type: mongoose.Schema.Types.ObjectId, ref: "Song", required: true },
+    song: { type: mongoose.Schema.Types.ObjectId, ref: "Song" },
+    audiusSong: { type: Object },
     playedAt: { type: Date, default: Date.now },
   },
   { _id: false },
@@ -33,6 +34,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 8, select: false },
     role: { type: String, enum: ["user", "admin"], default: "user" },
     likedSongs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Song" }],
+    likedAudiusSongs: { type: Array, default: [] },
     playlists: [{ type: mongoose.Schema.Types.ObjectId, ref: "Playlist" }],
     recentlyPlayed: [recentlyPlayedSchema],
     preferences: { type: preferencesSchema, default: () => ({}) },

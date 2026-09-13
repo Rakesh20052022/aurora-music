@@ -33,10 +33,10 @@ export const usersApi = {
   updateProfile: (payload) => api.put("/users/me", payload).then((r) => r.data),
   updatePreferences: (payload) => api.put("/users/me/preferences", payload).then((r) => r.data),
   liked: () => api.get("/users/me/liked").then((r) => r.data),
-  like: (songId) => api.post(`/users/me/liked/${songId}`).then((r) => r.data),
+  like: (songId, songData) => api.post(`/users/me/liked/${songId}`, songData).then((r) => r.data),
   unlike: (songId) => api.delete(`/users/me/liked/${songId}`).then((r) => r.data),
   recent: () => api.get("/users/me/recent").then((r) => r.data),
-  pushRecent: (songId) => api.post(`/users/me/recent/${songId}`).then((r) => r.data),
+  pushRecent: (songId, songData) => api.post(`/users/me/recent/${songId}`, songData).then((r) => r.data),
 }
 
 export const artistsApi = {

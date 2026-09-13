@@ -65,7 +65,10 @@ export function SongRow({ song, index, queue, onAddToPlaylist, onRemove, showAlb
 
       <button
         className={`song-like ${liked ? "liked" : ""}`}
-        onClick={() => toggleLike(song._id)}
+        onClick={(e) => {
+          e.stopPropagation()
+          toggleLike(song)
+        }}
         aria-label={liked ? "Unlike" : "Like"}
       >
         <Icon name="heart" size={16} filled={liked} />
@@ -92,7 +95,7 @@ export function SongRow({ song, index, queue, onAddToPlaylist, onRemove, showAlb
             <button
               onClick={() => {
                 setMenuOpen(false)
-                toggleLike(song._id)
+                toggleLike(song)
               }}
             >
               <Icon name="heart" size={16} filled={liked} /> {liked ? "Remove like" : "Like"}
