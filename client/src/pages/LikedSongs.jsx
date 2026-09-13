@@ -10,7 +10,7 @@ import "./pages.css"
 
 export default function LikedSongs() {
   const { playQueue } = usePlayer()
-  const { likedIds } = useLibrary()
+  const { likedIds, loading: libraryLoading } = useLibrary()
   const [songs, setSongs] = useState([])
   const [loading, setLoading] = useState(true)
   const [pickSong, setPickSong] = useState(null)
@@ -26,12 +26,9 @@ export default function LikedSongs() {
     }
   }, [])
 
-  // Keep the list in sync when a song is unliked from within this page.
-  useEffect(() => {
-    setSongs((prev) => prev.filter((s) => likedIds.has(s._id)))
-  }, [likedIds])
+  if (loading || libraryLoading) return <Loader />
 
-  if (loading) return <Loader />
+  const displaySongs = songs.filter((s) => likedIds.has(s._id))
 
   return (
     <div className="page fade-in">
@@ -43,13 +40,13 @@ export default function LikedSongs() {
           <span className="detail-kind">Playlist</span>
           <h1 className="detail-title">Liked Songs</h1>
           <div className="detail-meta">
-            <span>{songs.length} songs you love</span>
+            <span>{displaySongs.length} songs you love</span>
           </div>
           <div className="detail-actions">
             <button
               className="play-fab"
-              onClick={() => playQueue(songs, 0)}
-              disabled={songs.length === 0}
+              onClick={() => playQueue(displaySongs, 0)}
+              disabled={displaySongs.length === 0}
               aria-label="Play liked songs"
             >
               <Icon name="play" size={24} />
@@ -58,14 +55,14 @@ export default function LikedSongs() {
         </div>
       </div>
 
-      {songs.length === 0 ? (
+      {displaySongs.length === 0 ? (
         <EmptyState
           icon="heart"
           title="No liked songs yet"
           message="Tap the heart on any song to save it here."
         />
       ) : (
-        <SongList songs={songs} onAddToPlaylist={setPickSong} />
+        <SongList songs={displaySongs} onAddToPlaylist={setPickSong} />
       )}
 
       {pickSong && <AddToPlaylist song={pickSong} onClose={() => setPickSong(null)} />}
